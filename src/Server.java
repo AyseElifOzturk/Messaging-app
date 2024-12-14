@@ -18,7 +18,7 @@ public class Server{
                 //serverSocket.accept(); 
                 //Yeni client gelene kadar program duracak
                 //Yeni client bağlanırsa socket objesi return edilir bu sayede client ile iletişim kurulur
-                Socket socekt = serverSocket.accept();
+                Socket socket = serverSocket.accept();
                 System.out.println("A new client connected!");
 
                 ClientHandler clientHandler = new ClientHandler(socket);
