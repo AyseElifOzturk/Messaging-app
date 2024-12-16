@@ -30,7 +30,7 @@ public class ClientHandler implements Runnable {
         }
 
         clientHandlers.add(this);
-        broadcastMessage("SERVER: " + clientUsername + " sohbete katıldı!");
+        broadcastMessage("SERVER: " + clientUsername + " joined the chat!");
         LOGGER.info(clientUsername + " joined the chat.");
     }
 

@@ -6,15 +6,11 @@ import java.net.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ClientGUI extends JFrame {
     private static final long serialVersionUID = 1L;
     private static final String HOST = "localhost";
     private static final int PORT = 1234;
-
-    private static final Logger logger = Logger.getLogger(ClientGUI.class.getName());
 
     private Socket socket;
     private BufferedReader bufferedReader;
@@ -109,51 +105,35 @@ public class ClientGUI extends JFrame {
 
     private void sendImage() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Select an image to send");
+        fileChooser.setDialogTitle("Bir resim seçin");
         int userSelection = fileChooser.showOpenDialog(this);
 
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
-            
-            // File size check (e.g., max 10 MB)
-            if (selectedFile.length() > 10 * 1024 * 1024) {
-                handleError("File too large. Please select a file smaller than 10 MB.");
-                return;
-            }
-            
             try {
                 BufferedImage image = ImageIO.read(selectedFile);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-                // Compress image and send it
-                ImageIO.write(image, "jpg", baos); 
+                // Görüntüyü sıkıştır ve byte dizisine çevir
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(image, "jpg", baos);
                 byte[] imageBytes = baos.toByteArray();
 
-                // Send metadata and image
-                sendMetadata("IMAGE", imageBytes.length);
-                sendImageBytes(imageBytes);
-                
-                // Update UI
-                SwingUtilities.invokeLater(() -> addImageBubble(new JLabel(new ImageIcon(image)), username + ": " + selectedFile.getName()));
-                
+                // Görüntü bilgilerini sunucuya gönder
+                bufferedWriter.write("IMAGE:");
+                bufferedWriter.newLine();
+                bufferedWriter.write(String.valueOf(imageBytes.length));
+                bufferedWriter.newLine();
+                bufferedWriter.flush();
+
+                // Görüntüyü gönder
+                socket.getOutputStream().write(imageBytes);
+                socket.getOutputStream().flush();
+
+                addImageBubble(new JLabel(new ImageIcon(image)), username + ": " + selectedFile.getName());
             } catch (IOException e) {
-                handleError("Failed to send image: " + e.getMessage());
+                handleError("Resim gönderilirken hata oluştu.");
             }
         }
-    }
-
-    private void sendMetadata(String type, int size) throws IOException {
-        bufferedWriter.write(type + ":");
-        bufferedWriter.newLine();
-        bufferedWriter.write(String.valueOf(size));
-        bufferedWriter.newLine();
-        bufferedWriter.flush();
-    }
-
-    private void sendImageBytes(byte[] imageBytes) throws IOException {
-        BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream());
-        bos.write(imageBytes);
-        bos.flush();
     }
 
     public void listenForMessages() {
@@ -193,7 +173,7 @@ public class ClientGUI extends JFrame {
     private void addImageBubble(JLabel imageLabel, String senderInfo) {
         ImageIcon originalIcon = (ImageIcon) imageLabel.getIcon();
         Image originalImage = originalIcon.getImage();
-        Image scaledImage = originalImage.getScaledInstance(200, 200, Image.SCALE_FAST);
+        Image scaledImage = originalImage.getScaledInstance(200, 200, Image.SCALE_SMOOTH);
         imageLabel.setIcon(new ImageIcon(scaledImage));
 
         JPanel messageBubble = new JPanel();
